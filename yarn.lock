@@ -54,6 +54,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/d3@^3":
+  version "3.5.44"
+  resolved "https://registry.yarnpkg.com/@types/d3/-/d3-3.5.44.tgz#28635f8bb9adf1cef5bbef2b06778174a9d34383"
+  integrity sha512-hFEcf03YGJ2uQoDYEp3nFD5mXWxly5kf6KOstuOQFEs9sUCN7kNlKhcYkpZ3gK6PiHz4XRLkoHa80NVCJNeLBw==
+
 "@types/express-serve-static-core@^4.17.18":
   version "4.17.18"
   resolved "https://registry.yarnpkg.com/@types/express-serve-static-core/-/express-serve-static-core-4.17.18.tgz#8371e260f40e0e1ca0c116a9afcd9426fa094c40"
@@ -87,6 +92,13 @@
   version "14.14.28"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.28.tgz#cade4b64f8438f588951a6b35843ce536853f25b"
   integrity sha512-lg55ArB+ZiHHbBBttLpzD07akz0QPrZgUODNakeC09i62dnrywr9mFErHuaPlB6I7z+sEbK+IYmplahvplCj2g==
+
+"@types/plotly.js@^1.54.7":
+  version "1.54.9"
+  resolved "https://registry.yarnpkg.com/@types/plotly.js/-/plotly.js-1.54.9.tgz#cb909c8fea9abb793bca46e0c999864d64ad7b63"
+  integrity sha512-9eTHpAHuEWgBMpgclhNOBjK9IYE1P4V/m0PWwKCPcPhPyzb49sE/ZdaCgP0ZTDfyGcgH6Z1zNlS0a7aYSEb6jQ==
+  dependencies:
+    "@types/d3" "^3"
 
 "@types/qs@*":
   version "6.9.5"
@@ -1074,6 +1086,13 @@ nodemon@^2.0.6:
     touch "^3.1.0"
     undefsafe "^2.0.3"
     update-notifier "^4.1.0"
+
+nodeplotlib@^0.7.3:
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/nodeplotlib/-/nodeplotlib-0.7.3.tgz#dc278846e48c10aa9b79ee5fd954e370113ac887"
+  integrity sha512-ysMfRzNlFXGz2wG4AbZ+quSGx4JkNaggY0X4ILyWIqntHnDMa7cgN0KfT8Q0uUFIXjoLVZsnfTTZ2hLqsZm/7A==
+  dependencies:
+    "@types/plotly.js" "^1.54.7"
 
 nopt@^4.0.1:
   version "4.0.3"
