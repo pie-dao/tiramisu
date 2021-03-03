@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { Command } from 'commander';
 import { plot } from 'nodeplotlib';
 import { IndexCalculator } from './classes/IndexCalculator';
+import * as talib from 'talib-binding';
 
 
 const program = new Command();
@@ -19,6 +20,12 @@ const options = program.opts();
 const json = JSON.parse(readFileSync(options.allocation, 'utf-8'));
 
 function plotAll(data) {
+
+  //let rsi: any = [{x: [], y: [], type: 'scatter', name: 'rsi'}];
+
+  let x = data.dataSet[0].data.prices.map(o => o[1]);
+  const output = talib.RSI(x, 3)
+  console.log(output)
 
   /**
    * Returns
