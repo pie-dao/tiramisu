@@ -15,12 +15,19 @@ yarn build
 Usage: index [options]
 
 Options:
+  -d, --debug              output extra debugging
   --folder <path>          path to save data (default: "./data")
   -h, --hydratate          should hydratate
+  -c, --cache              should use cache
   -p, --plot               should plot
+  --maxweight <number>     max weight allowed: 0.1 = 10%
+  --optimize <number>      attempts to find a better sharpe ratio
+  --no-adjusted-weight     skips adjusted weight computation
+  --no-sentiment-weight    skips sentiment weight computation
+  --no-save-json           skips sentiment weight computation
   -n, --name <name>        name of allocation (required)
   -a, --allocation <path>  path to allocation (required)
-  --help 
+  --help                   display help for command
 
 yarn start -a mypie.json -n mypie -p
 ```

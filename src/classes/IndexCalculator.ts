@@ -58,10 +58,10 @@ export class IndexCalculator {
     private _api: any;
     private path: string;
 
-    constructor(name, path) {
+    constructor(name, path, maxweight="1") {
         this.path = process.cwd() + '/' + path;
         this.dataSet = [];
-        this.maxWeight = 0.2;
+        this.maxWeight = parseFloat(maxweight);
         this.name = name;
         this.performance = [];
         this.indexStartingNAV = 1;
@@ -137,12 +137,11 @@ export class IndexCalculator {
 
     getTotal() {
         let total = this.dataSet.reduce((a, v) => a+v.RATIO, 0 );
-        console.log(`\nTotal: ${total}\n`)
+        console.log(`\nTotal: ${round(total)}\n`)
         return total;
     }
 
-    computeAdjustedWeights() {
-
+    computeAdjustedWeights(counter=0) {
         let totalLeftover = 0;
         let leftoverMCAP = 0;
 
@@ -165,6 +164,7 @@ export class IndexCalculator {
         this.dataSet.forEach(el => {
             if(el.ADJUSTED) {
                 // el.relativeToLeftoverRATIO = el.AVG_MCAP / leftoverMCAP;
+
                 el.relativeToLeftoverRATIO = (new BigNumber(el.AVG_MCAP)).dividedBy( new BigNumber(leftoverMCAP) );
 
                 //el.adjustedMarketCAP = el.relativeToLeftoverRATIO * totalLeftover * this.cumulativeUnderlyingMCAP;
@@ -176,19 +176,27 @@ export class IndexCalculator {
                 //el.adjustedRATIO = el.originalRATIO + el.addedRatio;
                 el.adjustedRATIO = new BigNumber( el.RATIO ).plus(el.addedRatio);
 
-                el.RATIO = el.adjustedRATIO.toNumber();
+                if(counter > 10)
+                    el.RATIO = el.adjustedRATIO.toNumber() > this.maxWeight ? this.maxWeight : el.adjustedRATIO.toNumber();
+                else
+                    el.RATIO = el.adjustedRATIO.toNumber();
             }
 
             if(el.RATIO > this.maxWeight){
                 ratio = true;
             }
         });
+
+        // this.dataSet.forEach(el => {
+        //     console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
+        // });
         
         if(ratio){
+            this.getTotal();
             // console.log('Calling it again')
             // console.log('---------------------')
             // console.log('\n\n')
-            this.computeAdjustedWeights();
+            this.computeAdjustedWeights(counter+1);
         }
     }
 
@@ -411,16 +419,12 @@ export class IndexCalculator {
     }
 
     saveModel() {
-        let total = 0;
-        this.dataSet.forEach(el => {
-            total += el.RATIO;
-        });
 
+        this.getTotal();
         let data = JSON.stringify(this);
         fs.mkdirSync(this.path + '/pies/', { recursive: true })
         fs.writeFileSync(path.resolve(this.path, `pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}.json`), data);
 
-        console.log('TOTAL', total);
 
         this.dataSet.forEach(el => {
             console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)

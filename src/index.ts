@@ -12,7 +12,8 @@ program
   .option('-h, --hydratate', 'should hydratate')
   .option('-c, --cache', 'should use cache')
   .option('-p, --plot', 'should plot')
-  .option('--optimize <number>', 'attempts to find a better sharpe ration')
+  .option('--maxweight <number>', 'max weight allowed: 0.1 = 10%')
+  .option('--optimize <number>', 'attempts to find a better sharpe ratio')
   .option('--no-adjusted-weight', 'skips adjusted weight computation')
   .option('--no-sentiment-weight', 'skips sentiment weight computation')
   .option('--no-save-json', 'skips sentiment weight computation')
@@ -75,7 +76,7 @@ function plotAll(data) {
   if(options.hydratate) {
     idx = json;
   } else {
-    idx = new IndexCalculator(options.name, options.folder);
+    idx = new IndexCalculator(options.name, options.folder, options.maxweight);
     await idx.pullData(useCache, json);
     idx.compute(options);
   }
