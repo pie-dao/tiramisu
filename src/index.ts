@@ -4,13 +4,18 @@ import { Command } from 'commander';
 import { plot } from 'nodeplotlib';
 import { IndexCalculator } from './classes/IndexCalculator';
 
-
 const program = new Command();
 
 program
+  .option('-d, --debug', 'output extra debugging')
   .option('--folder <path>', 'path to save data', './data')
   .option('-h, --hydratate', 'should hydratate')
+  .option('-c, --cache', 'should use cache')
   .option('-p, --plot', 'should plot')
+  .option('--optimize <number>', 'attempts to find a better sharpe ration')
+  .option('--no-adjusted-weight', 'skips adjusted weight computation')
+  .option('--no-sentiment-weight', 'skips sentiment weight computation')
+  .option('--no-save-json', 'skips sentiment weight computation')
   .requiredOption('-n, --name <name>', 'name of allocation (required)')
   .requiredOption('-a, --allocation <path>', 'path to allocation (required)')
 
@@ -19,7 +24,6 @@ const options = program.opts();
 const json = JSON.parse(readFileSync(options.allocation, 'utf-8'));
 
 function plotAll(data) {
-
   /**
    * Returns
    */
@@ -64,15 +68,28 @@ function plotAll(data) {
 
 (async () => {
   let idx;
+  const useCache = options.cache || false;
+
+  if (options.debug) console.log(options);
   
   if(options.hydratate) {
     idx = json;
   } else {
     idx = new IndexCalculator(options.name, options.folder);
-    await idx.pullData(false, json);
-    idx.compute();
+    await idx.pullData(useCache, json);
+    idx.compute(options);
   }
-  
+
+  if(options.optimize) {
+    let attempts = parseInt(options.optimize);
+    if(attempts > 0) {
+      idx.optimizeSharpe(attempts);
+    } else {
+      console.log('Optimize: needs to be positive int')
+    }
+    
+  }
+
   if(options.plot) {
     plotAll(idx)
   }

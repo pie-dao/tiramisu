@@ -79,7 +79,7 @@ export class IndexCalculator {
 
     async pullData(useSnapshot=false, tokens) {
         for (const token of tokens) {
-            console.log(`Fetchin ${token.coingeckoId} ...`)
+            
             let jsonSnapshot;
             let hasSnapshot = false;
 
@@ -88,19 +88,26 @@ export class IndexCalculator {
                     jsonSnapshot = await require(path.resolve(this.path, `coins/${token.coingeckoId}.json`));
                     hasSnapshot = true;
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.log('No cached data for: ', token.coingeckoId);
+            }
 
             if(hasSnapshot) {
                 this.dataSet.push({...jsonSnapshot, ...token})
                 continue;
             } 
-
+            console.log(`Fetchin ${token.coingeckoId} ...`)
             let response: any = await this.fetchCoinData(token.coingeckoId);
-            this.dataSet.push({
+            let coin = {
                 ...token,
                 backtesting: {},
                 data: response.data
-            })
+            };
+            this.dataSet.push(coin)
+
+            let data = JSON.stringify(coin);
+            fs.mkdirSync(this.path + '/coins/', { recursive: true })
+            fs.writeFileSync(path.resolve(this.path, `coins/${token.coingeckoId}.json`), data);
         }
     }
 
@@ -128,15 +135,22 @@ export class IndexCalculator {
         });
     }
 
+    getTotal() {
+        let total = this.dataSet.reduce((a, v) => a+v.RATIO, 0 );
+        console.log(`\nTotal: ${total}\n`)
+        return total;
+    }
+
     computeAdjustedWeights() {
 
         let totalLeftover = 0;
         let leftoverMCAP = 0;
+
         this.dataSet.forEach(el => {
-            if(el.originalRATIO > this.maxWeight) {
+            if(el.RATIO > this.maxWeight) {
                 el.cappedRATIO = this.maxWeight;
+                el.leftover = el.RATIO - this.maxWeight;
                 el.RATIO = this.maxWeight;
-                el.leftover = el.originalRATIO - this.maxWeight;
                 el.CAPPED = true;
                 el.ADJUSTED = false;
                 totalLeftover += el.leftover;
@@ -147,6 +161,7 @@ export class IndexCalculator {
             }
         });
 
+        let ratio = false;
         this.dataSet.forEach(el => {
             if(el.ADJUSTED) {
                 // el.relativeToLeftoverRATIO = el.AVG_MCAP / leftoverMCAP;
@@ -159,11 +174,22 @@ export class IndexCalculator {
                 el.addedRatio = el.adjustedMarketCAP.dividedBy( new BigNumber(this.cumulativeUnderlyingMCAP) )                
 
                 //el.adjustedRATIO = el.originalRATIO + el.addedRatio;
-                el.adjustedRATIO = new BigNumber( el.originalRATIO ).plus(el.addedRatio);
+                el.adjustedRATIO = new BigNumber( el.RATIO ).plus(el.addedRatio);
 
                 el.RATIO = el.adjustedRATIO.toNumber();
             }
+
+            if(el.RATIO > this.maxWeight){
+                ratio = true;
+            }
         });
+        
+        if(ratio){
+            // console.log('Calling it again')
+            // console.log('---------------------')
+            // console.log('\n\n')
+            this.computeAdjustedWeights();
+        }
     }
 
     getTokenLastPrice(el) {
@@ -324,6 +350,7 @@ export class IndexCalculator {
             }
         }
 
+        this.performance = [];
         //Calculate the performance of the index
         for (let i = 0; i < this.dataSet[0].data.prices.length; i++) {
             const timestamp = this.dataSet[0].data.prices[i][0];
@@ -405,11 +432,11 @@ export class IndexCalculator {
         this.exportCSV();
     }
 
-    compute() {
+    compute({ adjustedWeight, sentimentWeight, saveJson }) {
         this.computeMCAP();
         this.computeWeights();
-        this.computeAdjustedWeights();
-        this.computeSentimentWeight();
+        if(adjustedWeight) this.computeAdjustedWeights();
+        if(sentimentWeight) this.computeSentimentWeight();
         this.computeBacktesting();
         this.computeCorrelation();
         this.computeCovariance();
@@ -417,14 +444,14 @@ export class IndexCalculator {
         this.computePerformance();
         this.computeTokenNumbers();
         this.computeSharpeRatio();
-        this.saveModel();
+        if(saveJson) this.saveModel();
     }
 
-    optimizeSharpe() {
-        let SR = 0.8;
+    optimizeSharpe(attempts=100) {
+        let SR = this.SHARPERATIO;
         let bestComb;
         //1.4824712878285808
-        for (let index = 0; index < 800000; index++) {
+        for (let index = 0; index < attempts; index++) {
             this.randomizeValues();
             this.computeBacktesting();
             this.computeCorrelation();
@@ -443,13 +470,16 @@ export class IndexCalculator {
             }
         }
 
-        console.log(`Best SR: ${SR}`)
+        console.log(`\n\nBest SR: ${SR}\n\n`)
         bestComb.forEach(el => {
             console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
         });
 
         let data = JSON.stringify(this);
-        fs.writeFileSync(path.resolve(__dirname, `../data/pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}-SR-Optimized.json`), data);
+        fs.mkdirSync(this.path + '/pies/', { recursive: true })
+        fs.writeFileSync(path.resolve(this.path, `pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}-SR-Optimized.json`), data);
+
+        console.log('Saved at: ', path.resolve(this.path, `pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}-SR-Optimized.json`))
     }
 
     randomizeValues() {
