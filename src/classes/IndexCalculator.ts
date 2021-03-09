@@ -350,6 +350,7 @@ export class IndexCalculator {
             }
         }
 
+        this.performance = [];
         //Calculate the performance of the index
         for (let i = 0; i < this.dataSet[0].data.prices.length; i++) {
             const timestamp = this.dataSet[0].data.prices[i][0];
@@ -446,11 +447,11 @@ export class IndexCalculator {
         if(saveJson) this.saveModel();
     }
 
-    optimizeSharpe() {
+    optimizeSharpe(attempts=100) {
         let SR = this.SHARPERATIO;
         let bestComb;
         //1.4824712878285808
-        for (let index = 0; index < 800000; index++) {
+        for (let index = 0; index < attempts; index++) {
             this.randomizeValues();
             this.computeBacktesting();
             this.computeCorrelation();
@@ -469,13 +470,16 @@ export class IndexCalculator {
             }
         }
 
-        console.log(`Best SR: ${SR}`)
+        console.log(`\n\nBest SR: ${SR}\n\n`)
         bestComb.forEach(el => {
             console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
         });
 
         let data = JSON.stringify(this);
-        fs.writeFileSync(path.resolve(__dirname, `../data/pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}-SR-Optimized.json`), data);
+        fs.mkdirSync(this.path + '/pies/', { recursive: true })
+        fs.writeFileSync(path.resolve(this.path, `pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}-SR-Optimized.json`), data);
+
+        console.log('Saved at: ', path.resolve(this.path, `pies/${this.name}-${this.performance[0][0]}-${this.performance[this.performance.length-1][0]}-SR-Optimized.json`))
     }
 
     randomizeValues() {

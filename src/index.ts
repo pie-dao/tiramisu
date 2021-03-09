@@ -7,11 +7,12 @@ import { IndexCalculator } from './classes/IndexCalculator';
 const program = new Command();
 
 program
+  .option('-d, --debug', 'output extra debugging')
   .option('--folder <path>', 'path to save data', './data')
   .option('-h, --hydratate', 'should hydratate')
   .option('-c, --cache', 'should use cache')
   .option('-p, --plot', 'should plot')
-  .option('--optimize', 'attempts to find a better sharpe ration')
+  .option('--optimize <number>', 'attempts to find a better sharpe ration')
   .option('--no-adjusted-weight', 'skips adjusted weight computation')
   .option('--no-sentiment-weight', 'skips sentiment weight computation')
   .option('--no-save-json', 'skips sentiment weight computation')
@@ -68,6 +69,8 @@ function plotAll(data) {
 (async () => {
   let idx;
   const useCache = options.cache || false;
+
+  if (options.debug) console.log(options);
   
   if(options.hydratate) {
     idx = json;
@@ -78,7 +81,13 @@ function plotAll(data) {
   }
 
   if(options.optimize) {
-    idx.optimizeSharpe()
+    let attempts = parseInt(options.optimize);
+    if(attempts > 0) {
+      idx.optimizeSharpe(attempts);
+    } else {
+      console.log('Optimize: needs to be positive int')
+    }
+    
   }
 
   if(options.plot) {
