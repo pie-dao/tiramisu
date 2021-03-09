@@ -11,6 +11,10 @@ program
   .option('-h, --hydratate', 'should hydratate')
   .option('-c, --cache', 'should use cache')
   .option('-p, --plot', 'should plot')
+  .option('--optimize', 'attempts to find a better sharpe ration')
+  .option('--no-adjusted-weight', 'skips adjusted weight computation')
+  .option('--no-sentiment-weight', 'skips sentiment weight computation')
+  .option('--no-save-json', 'skips sentiment weight computation')
   .requiredOption('-n, --name <name>', 'name of allocation (required)')
   .requiredOption('-a, --allocation <path>', 'path to allocation (required)')
 
@@ -64,14 +68,19 @@ function plotAll(data) {
 (async () => {
   let idx;
   const useCache = options.cache || false;
+  
   if(options.hydratate) {
     idx = json;
   } else {
     idx = new IndexCalculator(options.name, options.folder);
     await idx.pullData(useCache, json);
-    idx.compute();
+    idx.compute(options);
   }
-  
+
+  if(options.optimize) {
+    idx.optimizeSharpe()
+  }
+
   if(options.plot) {
     plotAll(idx)
   }

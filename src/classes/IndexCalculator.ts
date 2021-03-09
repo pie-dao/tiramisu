@@ -133,12 +133,6 @@ export class IndexCalculator {
             el.originalRATIO =( (new BigNumber(el.AVG_MCAP)).dividedBy( new BigNumber(this.cumulativeUnderlyingMCAP)) ).toNumber();
             el.RATIO = el.originalRATIO;
         });
-
-        this.getTotal();
-        this.dataSet.forEach(el => {
-            console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
-        });
-        console.log('\n')
     }
 
     getTotal() {
@@ -151,9 +145,6 @@ export class IndexCalculator {
 
         let totalLeftover = 0;
         let leftoverMCAP = 0;
-
-        
-        console.log('\n\nAfter')
 
         this.dataSet.forEach(el => {
             if(el.RATIO > this.maxWeight) {
@@ -170,7 +161,6 @@ export class IndexCalculator {
             }
         });
 
-        console.log(`\n$Leftover: ${totalLeftover} \n`)
         let ratio = false;
         this.dataSet.forEach(el => {
             if(el.ADJUSTED) {
@@ -193,18 +183,11 @@ export class IndexCalculator {
                 ratio = true;
             }
         });
-
         
-        this.dataSet.forEach(el => {
-            console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
-        });
-        
-        console.log('RATIIO', ratio)
-        this.getTotal()
         if(ratio){
-            console.log('Calling it again')
-            console.log('---------------------')
-            console.log('\n\n')
+            // console.log('Calling it again')
+            // console.log('---------------------')
+            // console.log('\n\n')
             this.computeAdjustedWeights();
         }
     }
@@ -448,11 +431,11 @@ export class IndexCalculator {
         this.exportCSV();
     }
 
-    compute() {
+    compute({ adjustedWeight, sentimentWeight, saveJson }) {
         this.computeMCAP();
         this.computeWeights();
-        this.computeAdjustedWeights();
-        this.computeSentimentWeight();
+        if(adjustedWeight) this.computeAdjustedWeights();
+        if(sentimentWeight) this.computeSentimentWeight();
         this.computeBacktesting();
         this.computeCorrelation();
         this.computeCovariance();
@@ -460,11 +443,11 @@ export class IndexCalculator {
         this.computePerformance();
         this.computeTokenNumbers();
         this.computeSharpeRatio();
-        this.saveModel();
+        if(saveJson) this.saveModel();
     }
 
     optimizeSharpe() {
-        let SR = 0.8;
+        let SR = this.SHARPERATIO;
         let bestComb;
         //1.4824712878285808
         for (let index = 0; index < 800000; index++) {
