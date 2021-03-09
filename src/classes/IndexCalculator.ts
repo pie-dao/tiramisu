@@ -79,7 +79,7 @@ export class IndexCalculator {
 
     async pullData(useSnapshot=false, tokens) {
         for (const token of tokens) {
-            console.log(`Fetchin ${token.coingeckoId} ...`)
+            
             let jsonSnapshot;
             let hasSnapshot = false;
 
@@ -88,19 +88,26 @@ export class IndexCalculator {
                     jsonSnapshot = await require(path.resolve(this.path, `coins/${token.coingeckoId}.json`));
                     hasSnapshot = true;
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.log('No cached data for: ', token.coingeckoId);
+            }
 
             if(hasSnapshot) {
                 this.dataSet.push({...jsonSnapshot, ...token})
                 continue;
             } 
-
+            console.log(`Fetchin ${token.coingeckoId} ...`)
             let response: any = await this.fetchCoinData(token.coingeckoId);
-            this.dataSet.push({
+            let coin = {
                 ...token,
                 backtesting: {},
                 data: response.data
-            })
+            };
+            this.dataSet.push(coin)
+
+            let data = JSON.stringify(coin);
+            fs.mkdirSync(this.path + '/coins/', { recursive: true })
+            fs.writeFileSync(path.resolve(this.path, `coins/${token.coingeckoId}.json`), data);
         }
     }
 
@@ -126,17 +133,33 @@ export class IndexCalculator {
             el.originalRATIO =( (new BigNumber(el.AVG_MCAP)).dividedBy( new BigNumber(this.cumulativeUnderlyingMCAP)) ).toNumber();
             el.RATIO = el.originalRATIO;
         });
+
+        this.getTotal();
+        this.dataSet.forEach(el => {
+            console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
+        });
+        console.log('\n')
+    }
+
+    getTotal() {
+        let total = this.dataSet.reduce((a, v) => a+v.RATIO, 0 );
+        console.log(`\nTotal: ${total}\n`)
+        return total;
     }
 
     computeAdjustedWeights() {
 
         let totalLeftover = 0;
         let leftoverMCAP = 0;
+
+        
+        console.log('\n\nAfter')
+
         this.dataSet.forEach(el => {
-            if(el.originalRATIO > this.maxWeight) {
+            if(el.RATIO > this.maxWeight) {
                 el.cappedRATIO = this.maxWeight;
+                el.leftover = el.RATIO - this.maxWeight;
                 el.RATIO = this.maxWeight;
-                el.leftover = el.originalRATIO - this.maxWeight;
                 el.CAPPED = true;
                 el.ADJUSTED = false;
                 totalLeftover += el.leftover;
@@ -147,6 +170,8 @@ export class IndexCalculator {
             }
         });
 
+        console.log(`\n$Leftover: ${totalLeftover} \n`)
+        let ratio = false;
         this.dataSet.forEach(el => {
             if(el.ADJUSTED) {
                 // el.relativeToLeftoverRATIO = el.AVG_MCAP / leftoverMCAP;
@@ -159,11 +184,29 @@ export class IndexCalculator {
                 el.addedRatio = el.adjustedMarketCAP.dividedBy( new BigNumber(this.cumulativeUnderlyingMCAP) )                
 
                 //el.adjustedRATIO = el.originalRATIO + el.addedRatio;
-                el.adjustedRATIO = new BigNumber( el.originalRATIO ).plus(el.addedRatio);
+                el.adjustedRATIO = new BigNumber( el.RATIO ).plus(el.addedRatio);
 
                 el.RATIO = el.adjustedRATIO.toNumber();
             }
+
+            if(el.RATIO > this.maxWeight){
+                ratio = true;
+            }
         });
+
+        
+        this.dataSet.forEach(el => {
+            console.log(`${el.name}: ${(el.RATIO*100).toFixed(2)}%`)
+        });
+        
+        console.log('RATIIO', ratio)
+        this.getTotal()
+        if(ratio){
+            console.log('Calling it again')
+            console.log('---------------------')
+            console.log('\n\n')
+            this.computeAdjustedWeights();
+        }
     }
 
     getTokenLastPrice(el) {

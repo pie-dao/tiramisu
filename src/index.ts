@@ -3,14 +3,13 @@ import { readFileSync } from 'fs';
 import { Command } from 'commander';
 import { plot } from 'nodeplotlib';
 import { IndexCalculator } from './classes/IndexCalculator';
-import * as talib from 'talib-binding';
-
 
 const program = new Command();
 
 program
   .option('--folder <path>', 'path to save data', './data')
   .option('-h, --hydratate', 'should hydratate')
+  .option('-c, --cache', 'should use cache')
   .option('-p, --plot', 'should plot')
   .requiredOption('-n, --name <name>', 'name of allocation (required)')
   .requiredOption('-a, --allocation <path>', 'path to allocation (required)')
@@ -20,13 +19,6 @@ const options = program.opts();
 const json = JSON.parse(readFileSync(options.allocation, 'utf-8'));
 
 function plotAll(data) {
-
-  //let rsi: any = [{x: [], y: [], type: 'scatter', name: 'rsi'}];
-
-  let x = data.dataSet[0].data.prices.map(o => o[1]);
-  const output = talib.RSI(x, 3)
-  console.log(output)
-
   /**
    * Returns
    */
@@ -71,12 +63,12 @@ function plotAll(data) {
 
 (async () => {
   let idx;
-  
+  const useCache = options.cache || false;
   if(options.hydratate) {
     idx = json;
   } else {
     idx = new IndexCalculator(options.name, options.folder);
-    await idx.pullData(false, json);
+    await idx.pullData(useCache, json);
     idx.compute();
   }
   
