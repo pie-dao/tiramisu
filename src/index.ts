@@ -15,7 +15,7 @@ program
   .option('--maxweight <number>', 'max weight allowed: 0.1 = 10%')
   .option('--optimize <number>', 'attempts to find a better sharpe ratio')
   .option('--no-adjusted-weight', 'skips adjusted weight computation')
-  .option('--no-sentiment-weight', 'skips sentiment weight computation')
+  .option('--sentimentweight <number>', 'sentiment weight influence allowed: 0.1 = 10%')
   .option('--no-save-json', 'skips sentiment weight computation')
   .requiredOption('-n, --name <name>', 'name of allocation (required)')
   .requiredOption('-a, --allocation <path>', 'path to allocation (required)')
@@ -70,14 +70,17 @@ function plotAll(data) {
 (async () => {
   let idx;
   const useCache = options.cache || false;
+  console.log(options)
 
   if (options.debug) console.log(options);
   
   if(options.hydratate) {
     idx = json;
   } else {
-    idx = new IndexCalculator(options.name, options.folder, options.maxweight);
+    
+    idx = new IndexCalculator(options.name, options.folder, options.maxweight, options.sentimentweight);
     await idx.pullData(useCache, json);
+    console.log(options)
     idx.compute(options);
   }
 

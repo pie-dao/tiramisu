@@ -58,15 +58,17 @@ export class IndexCalculator {
     private _api: any;
     private path: string;
 
-    constructor(name, path, maxweight="1") {
+    constructor(name, path, maxweight="1", sentimentWeight="0.2") {
         this.path = process.cwd() + '/' + path;
         this.dataSet = [];
         this.maxWeight = parseFloat(maxweight);
         this.name = name;
         this.performance = [];
         this.indexStartingNAV = 1;
-        this.sentimentWeightInfluence = 0.2;
+        this.sentimentWeightInfluence = parseFloat(sentimentWeight);
         this.marketWeightInfluence = 1 - this.sentimentWeightInfluence;
+
+        console.log('marketWeightInfluence', this.marketWeightInfluence)
         this._api = new CoinGecko();
     }
 
@@ -205,6 +207,7 @@ export class IndexCalculator {
     }
 
     computeSentimentWeight() {
+        console.log('computeSentimentWeight');
         let total = 0;
         this.dataSet.forEach(el => {
             total += el.sentimentScore;
@@ -215,9 +218,12 @@ export class IndexCalculator {
             el.sentimentRATIO = el.sentimentScore/total;
         });
 
+        console.log('computeSentimentWeight');
+
         // Calculate OverAllWeight
         this.dataSet.forEach(el => {
             el.finalWEIGHT = round( ( el.RATIO * this.marketWeightInfluence ) + (el.sentimentRATIO * this.sentimentWeightInfluence), 4);
+            console.log('el.finalWEIGHT', el.finalWEIGHT);
             el.RATIO = el.finalWEIGHT;
         });
 
@@ -366,7 +372,8 @@ export class IndexCalculator {
             
             for (let k = 0; k < this.dataSet.length; k++) {
                 const coin = this.dataSet[k];
-                tempCalc += coin.RATIO * coin.performance[i][1];
+                if(coin.performance[i])
+                    tempCalc += coin.RATIO * coin.performance[i][1];
             }
 
             this.performance.push([timestamp, tempCalc]);
@@ -436,11 +443,11 @@ export class IndexCalculator {
         this.exportCSV();
     }
 
-    compute({ adjustedWeight, sentimentWeight, saveJson }) {
+    compute({ adjustedWeight, sentimentweight, saveJson }) {
         this.computeMCAP();
         this.computeWeights();
         if(adjustedWeight) this.computeAdjustedWeights();
-        if(sentimentWeight) this.computeSentimentWeight();
+        if(sentimentweight) this.computeSentimentWeight();
         this.computeBacktesting();
         this.computeCorrelation();
         this.computeCovariance();
